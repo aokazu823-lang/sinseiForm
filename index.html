@@ -85,8 +85,29 @@ function renderTeam(){
 function endMatch(){match.done=true;save();page("score")}
 
 function judgeUI(root,onPick){
- root.innerHTML=`<div class="card"><div class="q">形を選んで得点登録</div><div class="note">今回は確実性優先で、SVG一覧から実物と同じ形を選びます。</div><div class="grid">${R.map((r,i)=>`<button class="role" data-role="${i}"><img src="img/${r.file}" alt="${r.name}"><b>${r.name}</b><span class="pts ${r.pts<0?'neg':''}">${r.pts>0?'+':''}${r.pts}点</span></button>`).join("")}</div></div>`;
- root.querySelectorAll("[data-role]").forEach(b=>b.onclick=()=>onPick(R[+b.dataset.role]));
+ // 個人戦・チーム戦とも同じ質問形式で候補を絞り、最後にSVGを見比べて決定する。
+ // 質問は「分からない」で飛ばせる。誤判定を避けるため、回答だけで1銘に断定はしない。
+ const questions=[
+  {q:"まず、蝶（的）は台の上に残ってる？", a:["残っている","台から落ちている","分からない"]},
+  {q:"扇は台の上に乗ってる？", a:["乗っている","乗っていない","分からない"]},
+  {q:"扇は蝶（的）に触れてる？", a:["触れている","触れていない","分からない"]},
+  {q:"扇は床についてる？", a:["床についている","床についていない","分からない"]},
+  {q:"蝶（的）は扇の上に乗ってる？", a:["乗っている","乗っていない","分からない"]}
+ ];
+ let qi=0, answers=[];
+ function ask(){
+   if(qi>=questions.length){ choose(); return; }
+   const x=questions[qi];
+   root.innerHTML=`<div class="card"><span class="badge">判定質問 ${qi+1} / ${questions.length}</span><div class="q">${x.q}</div>${x.a.map((v,i)=>`<button data-a="${i}">${v}</button>`).join("")}<button id="showAll" class="soft">質問をやめて28銘から選ぶ</button></div>`;
+   root.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>{answers.push(+b.dataset.a);qi++;ask()});
+   document.getElementById("showAll").onclick=choose;
+ }
+ function choose(){
+   root.innerHTML=`<div class="card"><div class="q">最後は画像を見比べて選んで</div><div class="note">質問の回答を参考に、実際の形とSVGが同じ銘をタップしてください。迷ったら全28銘を見比べられます。</div><div class="grid">${R.map((r,i)=>`<button class="role" data-role="${i}"><img src="img/${r.file}" alt="${r.name}"><b>${r.name}</b><span class="pts ${r.pts<0?'neg':''}">${r.pts>0?'+':''}${r.pts}点</span></button>`).join("")}</div><button id="againQ" class="soft">← 質問をやり直す</button></div>`;
+   root.querySelectorAll("[data-role]").forEach(b=>b.onclick=()=>onPick(R[+b.dataset.role]));
+   document.getElementById("againQ").onclick=()=>{qi=0;answers=[];ask()};
+ }
+ ask();
 }
 function renderScore(){
  let a=document.getElementById("scoreArea");if(!match){a.innerHTML='<div class="card">まだ試合がありません。</div>';return}
