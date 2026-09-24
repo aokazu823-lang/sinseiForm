@@ -1,33 +1,104 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><title>投扇興大会</title><style>
-:root{--bg:#f5efe4;--paper:#fffdf9;--ink:#29231f;--line:#ddcfba;--red:#963d36;--gold:#a47725}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif}main{max-width:720px;margin:auto;padding:10px 12px 50px}.nav{display:grid;grid-template-columns:1fr 1fr;gap:7px;position:sticky;top:0;z-index:5;background:var(--bg);padding:6px 0 9px}button,input{font:inherit}button{width:100%;min-height:52px;padding:10px;margin:5px 0;border:1px solid var(--line);border-radius:14px;background:#fff;color:var(--ink);font-weight:800;font-size:16px;touch-action:manipulation}button:active{background:#eee3d3}.nav button{margin:0;font-size:14px}.card{background:var(--paper);border:1px solid var(--line);border-radius:17px;padding:14px;margin:10px 0}.hidden{display:none}.q{font-size:21px;font-weight:900;line-height:1.4;margin:7px 0 12px}.note{font-size:13px;color:#6b6158;line-height:1.55}.badge{display:inline-block;background:#eee3d2;border-radius:99px;padding:5px 10px;font-size:12px}.choice{text-align:left}.soft{background:#efe5d6}.primary{background:var(--red);color:#fff;border-color:var(--red)}.danger{background:#fff0ed;color:#9d302b}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.role{padding:8px;min-height:230px}.role img{display:block;width:100%;height:165px;object-fit:contain;background:#faf7f0;border-radius:10px;margin-bottom:5px}.role b{display:block;font-size:18px}.pts{font-size:19px;font-weight:900;color:var(--gold)}.neg{color:#a83232}.players{display:flex;gap:6px;overflow:auto;padding:3px}.players button{min-width:105px}.active{outline:3px solid #c39339}.row{display:grid;grid-template-columns:1fr 95px;gap:7px}input{width:100%;min-height:50px;border:1px solid var(--line);border-radius:12px;padding:10px;font-size:16px}.scoreline{padding:10px 0;border-bottom:1px solid var(--line)}.rank{font-size:20px}.result{text-align:center}.result img{width:100%;max-height:340px;object-fit:contain;background:#faf7f0;border-radius:12px}.result .name{font-size:38px;font-weight:900;color:var(--red)}.result .points{font-size:28px;font-weight:900;color:var(--gold)}.filters{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.filters button{width:auto;min-height:38px;padding:6px 10px;margin:0;font-size:13px}@media(min-width:600px){.nav{grid-template-columns:repeat(4,1fr)}}@media(max-width:380px){.grid{grid-template-columns:1fr}.role{min-height:245px}.role img{height:185px}}
-</style></head><body><main><div class="nav"><button data-page="judge">🎯 判定</button><button data-page="roles">🖼️ 28銘</button><button data-page="members">👥 メンバー</button><button data-page="score">🏆 得点</button></div>
-<section id="judge"><h2>🎴 投扇興 判定</h2><div id="turn" class="card"></div><div id="wizard" class="card"></div></section>
-<section id="roles" class="hidden"><h2>🖼️ 28銘一覧</h2><div class="note">提供されたSVGをそのまま表示しています。銘が分かるときは直接タップして得点登録できます。</div><div id="roleGrid" class="grid"></div></section>
-<section id="members" class="hidden"><h2>👥 メンバー</h2><div class="card"><div class="row"><input id="newName" placeholder="名前を入力"><button id="addBtn">＋追加</button></div><div id="memberList"></div></div></section>
-<section id="score" class="hidden"><h2>🏆 得点表</h2><div class="card"><div id="ranking"></div></div><div class="card"><div class="q">履歴</div><div id="history"></div><button id="undoBtn">↩️ 直前の一投を取り消す</button><button id="resetBtn" class="danger">🗑️ 得点を全部リセット</button></div></section>
-</main><script>
-(()=>{"use strict";
-const R=[
-["東屋",10,"azumaya.svg"],["若紫",15,"wakamurasaki.svg"],["明石",20,"akashi.svg"],["蓬生",35,"yomogiu.svg"],["浮舟",20,"ukifune.svg"],["桐壺",50,"kiritsubo.svg"],["胡蝶",85,"kocho.svg"],
-["夕霧",5,"yugiri.svg"],["夕顔",8,"yugao.svg"],["澪標",35,"miotsukushi.svg"],["帚木",80,"hahakigi.svg"],["関屋",2,"sekiya.svg"],["藤袴",2,"fujibakama.svg"],["早蕨",8,"sawarabi.svg"],
-["夢浮橋",100,"yume-no-ukihashi.svg"],["常夏",10,"tokonatsu.svg"],["初音",10,"hatsune.svg"],["花散里",3,"hanachirusato.svg"],["末摘花",5,"suetsumuhana.svg"],["宿木",8,"yadorigi.svg"],["須磨",10,"suma.svg"],
-["こつん",-2,"kotsun.svg"],["ゆらり",2,"yurari.svg"],["手習",0,"tenarai.svg"],["野分",-30,"nowake.svg"],["幻",20,"maboroshi.svg"],["螢",45,"hotaru.svg"],["糸遊",15,"itoyu.svg"]];
-const img=r=>'img/'+r[2]; let players=JSON.parse(localStorage.getItem('tosen_players2')||'["かずくん"]'),logs=JSON.parse(localStorage.getItem('tosen_logs2')||'[]'),active=+(localStorage.getItem('tosen_active2')||0);if(active>=players.length)active=0;
-const save=()=>{localStorage.setItem('tosen_players2',JSON.stringify(players));localStorage.setItem('tosen_logs2',JSON.stringify(logs));localStorage.setItem('tosen_active2',active)};
-function page(id){['judge','roles','members','score'].forEach(x=>document.getElementById(x).classList.toggle('hidden',x!==id));if(id==='judge'){turn();start()}if(id==='members')members();if(id==='score')score();scrollTo(0,0)}document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>page(b.dataset.page));
-function turn(){let e=document.getElementById('turn');if(!players.length){e.innerHTML='<b>先にメンバーを登録してね</b><button id="gm">👥 メンバー登録へ</button>';document.getElementById('gm').onclick=()=>page('members');return}e.innerHTML='<span class="badge">いま投げる人</span><div class="q">'+players[active]+'</div><div class="players">'+players.map((p,i)=>'<button data-p="'+i+'" class="'+(i===active?'active':'')+'">'+p+'</button>').join('')+'</div>';e.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{active=+b.dataset.p;save();turn()})}
-let answers={};const W=document.getElementById('wizard');
-function start(){answers={};ask1()}
-function q(title,opts,skip){W.innerHTML='<span class="badge">質問で絞り込み</span><div class="q">'+title+'</div>';opts.forEach(o=>{let b=document.createElement('button');b.className='choice';b.textContent=o[0];b.onclick=o[1];W.appendChild(b)});if(skip){let b=document.createElement('button');b.className='soft';b.textContent='🤔 分からない → 候補画像へ';b.onclick=()=>showCandidates(R);W.appendChild(b)}}
-function ask1(){q('① 枕（白い台）は倒れた？',[["🧱 立っている",()=>ask2()],["💥 倒れた",()=>showCandidates(R.filter(r=>r[0]==='野分'))]],true)}
-function ask2(){q('② 扇は枕に触れている？',[["⭕ 触れている・乗っている",()=>{answers.touch=true;ask3()}],["↔️ 枕から離れている",()=>{answers.touch=false;ask3()}]],true)}
-function ask3(){q('③ 蝶（赤い的）はどのあたり？',[["🎯 枕の上・枕に接している",()=>showGroup('pillow')],["🪭 扇の上・扇に重なっている",()=>showGroup('fan')],["🦋 地面・離れた場所",()=>showGroup('ground')]],true)}
-function showGroup(g){let names;if(g==='pillow')names=['明石','帚木','関屋','藤袴','初音','須磨','こつん','ゆらり','手習','幻'];else if(g==='fan')names=['若紫','浮舟','夕顔','常夏','宿木','胡蝶','螢','糸遊'];else names=['東屋','蓬生','桐壺','夕霧','澪標','早蕨','夢浮橋','花散里','末摘花'];let c=R.filter(r=>names.includes(r[0]));if(answers.touch===false)c=c.filter(r=>!['帚木','関屋','胡蝶','澪標','夢浮橋','こつん','幻'].includes(r[0]));showCandidates(c.length?c:R)}
-function roleButton(r){let b=document.createElement('button');b.className='role';b.innerHTML='<img src="'+img(r)+'" alt="'+r[0]+'"><b>'+r[0]+'</b><span class="pts '+(r[1]<0?'neg':'')+'">'+(r[1]>0?'+':'')+r[1]+'点</span>';b.onclick=()=>result(r);return b}
-function showCandidates(c){W.innerHTML='<span class="badge">候補 '+c.length+'</span><div class="q">実物と同じ画像をタップ</div><div class="note">候補に無ければ「28銘すべて表示」。画像は提供されたSVGそのものです。</div>';let g=document.createElement('div');g.className='grid';c.forEach(r=>g.appendChild(roleButton(r)));W.appendChild(g);let all=document.createElement('button');all.className='soft';all.textContent='🖼️ 28銘すべて表示';all.onclick=()=>showCandidates(R);W.appendChild(all);let re=document.createElement('button');re.textContent='↩️ 質問を最初から';re.onclick=start;W.appendChild(re)}
-function result(r){W.innerHTML='<div class="result"><img src="'+img(r)+'" alt="'+r[0]+'"><div class="name">'+r[0]+'</div><div class="points '+(r[1]<0?'neg':'')+'">'+(r[1]>0?'+':'')+r[1]+'点</div></div>';let b=document.createElement('button');b.className='primary';b.textContent=players.length?'🏆 '+players[active]+' に得点登録':'👥 メンバー登録へ';b.onclick=()=>{if(!players.length){page('members');return}logs.push({p:players[active],role:r[0],pts:r[1],at:Date.now()});active=(active+1)%players.length;save();turn();start()};W.appendChild(b);let x=document.createElement('button');x.textContent='得点登録せず戻る';x.onclick=start;W.appendChild(x)}
-let rg=document.getElementById('roleGrid');R.forEach(r=>rg.appendChild(roleButton(r)));
-function members(){let m=document.getElementById('memberList');m.innerHTML=players.length?players.map((p,i)=>'<div class="scoreline"><b>'+p+'</b><button class="danger" data-d="'+i+'">削除</button></div>').join(''):'まだメンバーなし';m.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{let i=+b.dataset.d,n=players[i];players.splice(i,1);logs=logs.filter(x=>x.p!==n);if(active>=players.length)active=0;save();members()})}document.getElementById('addBtn').onclick=()=>{let e=document.getElementById('newName'),n=e.value.trim();if(!n)return;if(!players.includes(n))players.push(n);e.value='';save();members()};
-function score(){let sums={};players.forEach(p=>sums[p]=0);logs.forEach(l=>sums[l.p]=(sums[l.p]||0)+l.pts);document.getElementById('ranking').innerHTML=Object.entries(sums).sort((a,b)=>b[1]-a[1]).map((x,i)=>'<div class="scoreline rank"><b>'+(i+1)+'位 '+x[0]+'</b>　'+x[1]+'点 <span class="note">('+logs.filter(l=>l.p===x[0]).length+'投)</span></div>').join('')||'メンバー未登録';document.getElementById('history').innerHTML=logs.length?logs.slice().reverse().map(l=>'<div class="scoreline">'+l.p+'　<b>'+l.role+'</b>　'+(l.pts>0?'+':'')+l.pts+'点</div>').join(''):'まだ記録なし'}document.getElementById('undoBtn').onclick=()=>{logs.pop();save();score()};document.getElementById('resetBtn').onclick=()=>{if(confirm('得点履歴を全部消しますか？')){logs=[];save();score()}};
-turn();start();members();score();
-})();</script></body></html>
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><title>投扇興大会</title>
+<style>
+:root{--bg:#f5efe5;--paper:#fffdf8;--ink:#29231f;--line:#ddcfbb;--red:#963e37;--gold:#a67823}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif}
+main{max-width:760px;margin:auto;padding:10px 12px 48px}h1{font-size:25px;margin:8px 0}h2{font-size:21px}
+.nav{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;position:sticky;top:0;z-index:10;background:var(--bg);padding:6px 0 9px}
+button,input{font:inherit}button{width:100%;min-height:50px;padding:10px;margin:4px 0;border:1px solid var(--line);border-radius:14px;background:#fff;color:var(--ink);font-size:16px;font-weight:750;touch-action:manipulation}button:active{background:#eee3d4}
+.nav button{margin:0;font-size:14px}.card{background:var(--paper);border:1px solid var(--line);border-radius:17px;padding:14px;margin:10px 0}.hidden{display:none}.q{font-size:21px;font-weight:850;line-height:1.4;margin:5px 0 10px}.note{font-size:13px;color:#6d6258;line-height:1.55}.badge{display:inline-block;background:#eee3d2;border-radius:99px;padding:4px 9px;font-size:12px}.primary{background:var(--red);color:white;border-color:var(--red)}.soft{background:#efe5d7}.danger{background:#fff0ed;color:#a02f2b}
+input{width:100%;min-height:48px;border:1px solid var(--line);border-radius:12px;padding:10px;font-size:16px}.row{display:grid;grid-template-columns:1fr 100px;gap:7px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.role{min-height:190px;padding:8px}.role img{width:100%;height:125px;object-fit:contain;background:#fbf7ef;border-radius:10px}.role b{display:block;font-size:18px}.pts{font-size:18px;font-weight:900;color:var(--gold)}.neg{color:#aa3030}
+.choice{display:grid;grid-template-columns:42px 1fr;text-align:left;align-items:center;gap:8px}.choice .em{font-size:27px;text-align:center}.players{display:flex;gap:6px;overflow:auto;padding:2px}.players button{min-width:105px}.active{outline:3px solid #c49339}
+.modeGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.modeGrid button{min-height:90px;font-size:18px}.scoreline{padding:9px 0;border-bottom:1px solid var(--line)}.rank{font-size:20px}.bigscore{font-size:30px;font-weight:900;color:var(--red)}.progress{font-size:14px;font-weight:700;color:#6d6258}.teamBox{border:2px solid var(--line);border-radius:14px;padding:10px;margin:8px 0}.checkrow{display:flex;align-items:center;gap:9px;padding:9px 2px;border-bottom:1px solid #eee}.checkrow input{width:24px;min-height:24px}
+@media(min-width:600px){.nav{grid-template-columns:repeat(4,1fr)}}@media(max-width:380px){.grid{grid-template-columns:1fr}.role{min-height:175px}}
+</style></head><body><main>
+<div class="nav"><button data-page="game">🎴 ゲーム</button><button data-page="roles">🖼️ 28銘</button><button data-page="members">👥 メンバー</button><button data-page="score">🏆 結果</button></div>
+
+<section id="game"><h1>🎴 投扇興大会</h1><div id="gameArea"></div></section>
+<section id="roles" class="hidden"><h2>🖼️ 銘一覧</h2><div class="note">アップロードしてもらったSVGをそのまま表示しています。</div><div id="roleGrid" class="grid"></div></section>
+<section id="members" class="hidden"><h2>👥 メンバー</h2><div class="card"><div class="row"><input id="newName" placeholder="名前"><button id="addMember">＋追加</button></div><div id="memberList"></div></div></section>
+<section id="score" class="hidden"><h2>🏆 結果・履歴</h2><div id="scoreArea"></div></section>
+</main>
+<script>
+(function(){"use strict";
+const R=[{"file": "akashi.svg", "name": "明石", "pts": 20}, {"file": "azumaya.svg", "name": "東屋", "pts": 10}, {"file": "fujibakama.svg", "name": "藤袴", "pts": 2}, {"file": "hahakigi.svg", "name": "帚木", "pts": 80}, {"file": "hanachirusato.svg", "name": "花散里", "pts": 3}, {"file": "hatsune.svg", "name": "初音", "pts": 10}, {"file": "hotaru.svg", "name": "螢", "pts": 45}, {"file": "itoyu.svg", "name": "糸遊", "pts": 15}, {"file": "kiritsubo.svg", "name": "桐壺", "pts": 50}, {"file": "kocho.svg", "name": "胡蝶", "pts": 85}, {"file": "kotsun.svg", "name": "こつん", "pts": -2}, {"file": "maboroshi.svg", "name": "幻", "pts": 20}, {"file": "miotsukushi.svg", "name": "澪標", "pts": 35}, {"file": "nowake.svg", "name": "野分", "pts": -30}, {"file": "sawarabi.svg", "name": "早蕨", "pts": 8}, {"file": "sekiya.svg", "name": "関屋", "pts": 2}, {"file": "suetsumuhana.svg", "name": "末摘花", "pts": 5}, {"file": "suma.svg", "name": "須磨", "pts": 10}, {"file": "tenarai.svg", "name": "手習", "pts": 0}, {"file": "tokonatsu.svg", "name": "常夏", "pts": 10}, {"file": "ukifune.svg", "name": "浮舟", "pts": 20}, {"file": "wakamurasaki.svg", "name": "若紫", "pts": 15}, {"file": "yadorigi.svg", "name": "宿木", "pts": 8}, {"file": "yomogiu.svg", "name": "蓬生", "pts": 35}, {"file": "yugao.svg", "name": "夕顔", "pts": 8}, {"file": "yugiri.svg", "name": "夕霧", "pts": 5}, {"file": "yume-no-ukihashi.svg", "name": "夢浮橋", "pts": 100}, {"file": "yurari.svg", "name": "ゆらり", "pts": 2}];
+let players=JSON.parse(localStorage.getItem("ts_players")||"[]");
+let match=JSON.parse(localStorage.getItem("ts_match")||"null");
+const GA=document.getElementById("gameArea");
+
+function save(){localStorage.setItem("ts_players",JSON.stringify(players));localStorage.setItem("ts_match",JSON.stringify(match))}
+function page(id){["game","roles","members","score"].forEach(x=>document.getElementById(x).classList.toggle("hidden",x!==id));if(id==="game")renderGame();if(id==="members")renderMembers();if(id==="score")renderScore();scrollTo(0,0)}
+document.querySelectorAll("[data-page]").forEach(b=>b.onclick=()=>page(b.dataset.page));
+
+function renderMembers(){
+ let box=document.getElementById("memberList");
+ box.innerHTML=players.length?players.map((p,i)=>`<div class="scoreline"><b>${p}</b><button class="danger" data-del="${i}">削除</button></div>`).join(""):'<p class="note">まず参加者を登録してください。</p>';
+ box.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{players.splice(+b.dataset.del,1);save();renderMembers()});
+}
+document.getElementById("addMember").onclick=()=>{let i=document.getElementById("newName"),n=i.value.trim();if(n&&!players.includes(n))players.push(n);i.value="";save();renderMembers()};
+
+function setup(){
+ if(!players.length){GA.innerHTML='<div class="card"><div class="q">まずメンバー登録</div><button id="toMem">👥 メンバーを登録する</button></div>';document.getElementById("toMem").onclick=()=>page("members");return}
+ GA.innerHTML=`<div class="card"><div class="q">対戦形式を選んで</div><div class="modeGrid"><button id="solo">👤 個人戦<br><span class="note">3投 / 5投</span></button><button id="team">👥 チーム戦<br><span class="note">各チーム合計8投</span></button></div></div>`;
+ document.getElementById("solo").onclick=soloSetup;document.getElementById("team").onclick=teamSetup;
+}
+function soloSetup(){
+ GA.innerHTML=`<div class="card"><div class="q">個人戦は何投？</div><div class="modeGrid"><button data-n="3">3投</button><button data-n="5">5投</button></div></div><div class="card"><div class="q">参加メンバー</div>${players.map((p,i)=>`<label class="checkrow"><input type="checkbox" class="soloP" value="${i}" checked>${p}</label>`).join("")}<button id="startSolo" class="primary">🎴 個人戦スタート</button></div>`;
+ let limit=3;GA.querySelectorAll("[data-n]").forEach(b=>b.onclick=()=>{limit=+b.dataset.n;GA.querySelectorAll("[data-n]").forEach(x=>x.classList.remove("active"));b.classList.add("active")});GA.querySelector('[data-n="3"]').classList.add("active");
+ document.getElementById("startSolo").onclick=()=>{let ids=[...document.querySelectorAll(".soloP:checked")].map(x=>+x.value);if(!ids.length)return;match={type:"solo",limit,participants:ids.map(i=>players[i]),logs:[],turn:0,done:false};save();renderGame()};
+}
+function teamSetup(){
+ GA.innerHTML=`<div class="card"><div class="q">チーム名</div><input id="ta" value="チームA"><input id="tb" value="チームB"></div><div class="card"><div class="q">メンバーを振り分け</div>${players.map((p,i)=>`<div class="scoreline"><b>${p}</b><div class="modeGrid"><button data-p="${i}" data-t="A">A</button><button data-p="${i}" data-t="B">B</button></div></div>`).join("")}<button id="startTeam" class="primary">🎴 チーム戦スタート</button></div>`;
+ let assign={};GA.querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>{let i=+b.dataset.p;assign[i]=b.dataset.t;GA.querySelectorAll(`[data-p="${i}"]`).forEach(x=>x.classList.remove("active"));b.classList.add("active")});
+ document.getElementById("startTeam").onclick=()=>{let A=[],B=[];Object.keys(assign).forEach(i=>{(assign[i]==="A"?A:B).push(players[+i])});if(!A.length||!B.length)return;match={type:"team",limit:8,teams:[{name:document.getElementById("ta").value||"チームA",members:A},{name:document.getElementById("tb").value||"チームB",members:B}],logs:[],teamTurn:0,selected:A[0],done:false};save();renderGame()};
+}
+
+function totals(){
+ let s={};if(!match)return s;
+ if(match.type==="solo")match.participants.forEach(p=>s[p]=0);else match.teams.forEach(t=>s[t.name]=0);
+ match.logs.forEach(l=>{let k=match.type==="solo"?l.player:l.team;s[k]=(s[k]||0)+l.pts});return s
+}
+function counts(key){return match.logs.filter(l=>(match.type==="solo"?l.player:l.team)===key).length}
+function renderGame(){
+ if(!match||match.done){setup();return}
+ if(match.type==="solo")renderSolo();else renderTeam();
+}
+function renderSolo(){
+ let available=match.participants.filter(p=>counts(p)<match.limit);
+ if(!available.length){match.done=true;save();page("score");return}
+ let p=available[match.turn%available.length]; let s=totals();
+ GA.innerHTML=`<div class="card"><span class="badge">個人戦 ${match.limit}投</span><div class="q">次は ${p}</div><div class="bigscore">${s[p]||0}点</div><div class="progress">${counts(p)} / ${match.limit}投</div></div><div id="judge"></div><button id="quit" class="danger">試合を終了</button>`;
+ judgeUI(document.getElementById("judge"),(r)=>{match.logs.push({player:p,role:r.name,pts:r.pts});match.turn++;save();renderSolo()});
+ document.getElementById("quit").onclick=endMatch;
+}
+function renderTeam(){
+ let t=match.teams[match.teamTurn%2];if(counts(t.name)>=8){match.teamTurn++;t=match.teams[match.teamTurn%2]}
+ if(match.teams.every(x=>counts(x.name)>=8)){match.done=true;save();page("score");return}
+ if(!t.members.includes(match.selected))match.selected=t.members[0];let s=totals();
+ GA.innerHTML=`<div class="card"><span class="badge">チーム戦 各8投</span><div class="q">${t.name}　${counts(t.name)} / 8投</div><div class="bigscore">${s[t.name]||0}点</div><div class="note">今回投げる人を選択</div><div class="players">${t.members.map(p=>`<button data-person="${p}" class="${p===match.selected?'active':''}">${p}</button>`).join("")}</div></div><div id="judge"></div><button id="quit" class="danger">試合を終了</button>`;
+ GA.querySelectorAll("[data-person]").forEach(b=>b.onclick=()=>{match.selected=b.dataset.person;save();renderTeam()});
+ judgeUI(document.getElementById("judge"),(r)=>{match.logs.push({team:t.name,player:match.selected,role:r.name,pts:r.pts});match.teamTurn++;save();renderTeam()});
+ document.getElementById("quit").onclick=endMatch;
+}
+function endMatch(){match.done=true;save();page("score")}
+
+function judgeUI(root,onPick){
+ root.innerHTML=`<div class="card"><div class="q">形を選んで得点登録</div><div class="note">今回は確実性優先で、SVG一覧から実物と同じ形を選びます。</div><div class="grid">${R.map((r,i)=>`<button class="role" data-role="${i}"><img src="img/${r.file}" alt="${r.name}"><b>${r.name}</b><span class="pts ${r.pts<0?'neg':''}">${r.pts>0?'+':''}${r.pts}点</span></button>`).join("")}</div></div>`;
+ root.querySelectorAll("[data-role]").forEach(b=>b.onclick=()=>onPick(R[+b.dataset.role]));
+}
+function renderScore(){
+ let a=document.getElementById("scoreArea");if(!match){a.innerHTML='<div class="card">まだ試合がありません。</div>';return}
+ let s=totals(), keys=match.type==="solo"?match.participants:match.teams.map(t=>t.name);
+ let rank=keys.map(k=>[k,s[k]||0,counts(k)]).sort((x,y)=>y[1]-x[1]);
+ a.innerHTML=`<div class="card"><span class="badge">${match.type==="solo"?'個人戦 '+match.limit+'投':'チーム戦 各8投'}</span>${rank.map((x,i)=>`<div class="scoreline rank"><b>${i+1}位 ${x[0]}</b>　${x[1]}点 <span class="note">(${x[2]}投)</span></div>`).join("")}</div><div class="card"><div class="q">投球履歴</div>${match.logs.slice().reverse().map(l=>`<div class="scoreline">${match.type==="team"?l.team+" / ":""}${l.player}　<b>${l.role}</b>　${l.pts>0?'+':''}${l.pts}点</div>`).join("")||"記録なし"}<button id="undo">↩️ 最後の1投を取り消す</button><button id="continue">試合に戻る</button><button id="newGame" class="primary">🆕 新しい試合</button></div>`;
+ document.getElementById("undo").onclick=()=>{match.logs.pop();match.done=false;save();renderScore()};
+ document.getElementById("continue").onclick=()=>{match.done=false;save();page("game")};
+ document.getElementById("newGame").onclick=()=>{match=null;save();page("game")};
+}
+
+document.getElementById("roleGrid").innerHTML=R.map(r=>`<button class="role"><img src="img/${r.file}" alt="${r.name}"><b>${r.name}</b><span class="pts ${r.pts<0?'neg':''}">${r.pts>0?'+':''}${r.pts}点</span></button>`).join("");
+renderMembers();renderGame();renderScore();
+})();
+</script></body></html>
